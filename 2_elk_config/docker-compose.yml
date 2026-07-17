@@ -1,0 +1,110 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - ELASTIC_PASSWORD=123456
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    volumes:
+      - ./elasticsearch/es_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - elk-net
+    cpuset: "8-9" # 나머지 서비스와 코어 분리
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5' # CPU 할당 제한
+          memory: 4G
+        reservations:
+          cpus: '1.5'
+          memory: 4G
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: logstash
+    environment:
+      - LS_JAVA_OPTS=-Xms2g -Xmx2g
+      - xpack.management.enabled=true
+      - xpack.management.elasticsearch.hosts=http://elasticsearch:9200
+      - xpack.management.pipeline.id=firewall_agg
+      - xpack.management.elasticsearch.username=elastic
+      - xpack.management.elasticsearch.password="123456"
+    volumes:
+      - ./logstash/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./logstash/es_template.json:/usr/share/logstash/config/es_template.json:ro
+      - ../sample_logs:/usr/share/logstash/sample_logs:ro
+      - ../3_aggregate_output:/usr/share/logstash/output
+      - ./logs:/usr/share/logstash/logs
+    ports:
+      - "9600:9600"
+    networks:
+      - elk-net
+    depends_on:
+      - elasticsearch
+    cpuset: "0-7" # 8개 코어 전용 할당 
+    deploy:
+      resources:
+        limits:
+          cpus: '8.0'
+          memory: 8G
+        reservations:
+          cpus: '8.0'
+          memory: 8G
+
+  metricbeat:
+    image: docker.elastic.co/beats/metricbeat:8.11.0
+    container_name: metricbeat
+    user: root
+    command: ["--strict.perms=false"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./metricbeat/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
+      - ./metricbeat/modules.d:/usr/share/metricbeat/modules.d:ro
+    networks:
+      - elk-net
+    depends_on:
+      - elasticsearch
+      - logstash
+    cpuset: "8-9"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 1G
+        reservations:
+          cpus: '0.2'
+          memory: 1G
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: kibana
+    environment:
+      - SERVER_NAME=kibana
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD="123456"
+      - I18N_LOCALE=en-us
+    ports:
+      - "5601:5601"
+    networks:
+      - elk-net
+    depends_on:
+      - elasticsearch
+    cpuset: "8-9"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 1G
+        reservations:
+          cpus: '0.3'
+          memory: 1G
+
+networks:
+  elk-net:
+    driver: bridge

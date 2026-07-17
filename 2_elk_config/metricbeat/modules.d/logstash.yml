@@ -1,0 +1,6 @@
+- module: logstash
+  metricsets:
+    - node
+    - node_stats
+  period: 5s
+  hosts: ["http://logstash:9600"]

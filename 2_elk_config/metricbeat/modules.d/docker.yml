@@ -1,0 +1,9 @@
+- module: docker
+  metricsets:
+    - container
+    - cpu
+    - diskio
+    - memory
+  period: 5s
+  hosts: ["unix:///var/run/docker.sock"]
+  enabled: true

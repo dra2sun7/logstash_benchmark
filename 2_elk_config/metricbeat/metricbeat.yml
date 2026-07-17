@@ -1,0 +1,10 @@
+metricbeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+
+  username: "elastic"
+  password: "123456"
+  ssl.verification_mode: "none"
