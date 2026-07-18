@@ -628,15 +628,12 @@ Worker 수가 늘어날수록 **소규모 윈도우(1~2개)가 줄고, 중대형
 ```mermaid
 flowchart TD
     A[Firewall] --> B["Filebeat / Fluent Bit<br/>(경량 수집기)"]
-    B --> C
+    B --> K["Kafka<br/>partition key = hash(src_ip, dst_ip, dst_port)"]
+    K --> C
 
-    subgraph C["Kafka<br/>partition key = hash(src_ip, dst_ip, dst_port)"]
+    subgraph C[" "]
         direction LR
-        P0[P0]
-        P1[P1]
-        P2[P2]
-        P3[P3]
-        P4["..."]
+        P0[P0] ~~~ P1[P1] ~~~ P2[P2] ~~~ P3[P3] ~~~ P4["..."]
     end
 
     C --> D
