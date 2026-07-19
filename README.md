@@ -20,7 +20,7 @@
 
 ```
 .
-├── README.md                          # 본 보고서
+├── 벤치마크_보고서.pdf                  # 본 보고서 (본 README.md를 PDF로 변환)
 ├── 1_pipeline/
 │   └── firewall_agg.conf              # Logstash 파이프라인 코드
 ├── 2_elk_config/
