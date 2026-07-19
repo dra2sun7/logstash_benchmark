@@ -21,9 +21,9 @@
 ```
 .
 ├── 벤치마크_보고서.pdf                  # 본 보고서 (본 README.md를 PDF로 변환)
-├── 1_pipeline/
+├── 1_파이프라인/
 │   └── firewall_agg.conf              # Logstash 파이프라인 코드
-├── 2_elk_config/
+├── 2_ELK_설정/
 │   ├── docker-compose.yml             # 컨테이너 구성 및 자원 할당
 │   │                                   #   (Elasticsearch config 포함: environment 블록의
 │   │                                   #    discovery.type, ES_JAVA_OPTS, cpuset, memory 등 —
@@ -36,11 +36,11 @@
 │   │   └── modules.d/
 │   │       ├── docker.yml             # Docker 모듈 설정
 │   │       └── logstash.yml           # Logstash 모듈 설정
-│   └── logs/
+│   └── 로그/
 │       └── invalid_format.log         # 형식 검증 실패로 격리된 로그 (4건)
-├── 3_aggregate_output/
+├── 3_집계결과물/
 │   └── firewall_agg_result.csv.gz     # Worker 1 기준 agg 결과물 (552,904행)
-├── 4_raw_metrics/                     # 벤치마크 원본 시계열 CSV
+├── 4_원본측정데이터/                   # 벤치마크 원본 시계열 CSV
 │   ├── worker{1,4,8}_eps.csv          # events.in / events.out
 │   ├── worker{1,4,8}_logstash.csv     # Logstash CPU
 │   ├── worker{1,4,8}_log_mem.csv      # Logstash Memory
@@ -49,7 +49,7 @@
 │   └── worker{1,4,8}_es.csv           # Elasticsearch Disk Write / CPU
 ```
 
-> `4_raw_metrics/`는 본 보고서의 모든 수치를 산출한 원본 데이터이다. Kibana Lens에서 10초 버킷, Counter rate(per second)로 추출하였으며, 이 CSV만으로 보고서의 전 수치를 재현할 수 있다. 벤치마크 그래프(21장)는 별도 폴더 없이 본 PDF 안에 직접 삽입되어 있다.
+> `4_원본측정데이터/`는 본 보고서의 모든 수치를 산출한 원본 데이터이다. Kibana Lens에서 10초 버킷, Counter rate(per second)로 추출하였으며, 이 CSV만으로 보고서의 전 수치를 재현할 수 있다. 벤치마크 그래프(21장)는 별도 폴더 없이 본 PDF 안에 직접 삽입되어 있다.
 
 ---
 
@@ -133,7 +133,7 @@ flowchart TD
 - **수집 주기:** Metricbeat `period: 5s`
 - **Kibana 시각화 버킷:** 10초 고정 (Auto로 두면 테스트 길이에 따라 버킷 크기가 바뀌므로)
 - **Counter rate 처리:** `diskio`, `events` 필드는 컨테이너 시작 이후 누적값이므로, Kibana에서 `Counter rate` + `Normalize by unit: per second`를 적용하여 초당 값으로 변환
-- **그래프:** 모든 그래프는 `4_raw_metrics/`의 CSV에서 렌더링하였으며, 같은 지표는 3개 케이스의 Y축 범위를 맞췄다. 그래프의 파란 음영은 유입 구간, 주황 음영은 유입이 끝난 뒤 남은 데이터가 마저 빠져나가는 구간을 나타낸다.
+- **그래프:** 모든 그래프는 `4_원본측정데이터/`의 CSV에서 렌더링하였으며, 같은 지표는 3개 케이스의 Y축 범위를 맞췄다. 그래프의 파란 음영은 유입 구간, 주황 음영은 유입이 끝난 뒤 남은 데이터가 마저 빠져나가는 구간을 나타낸다.
 
 ### 3.3 EPS 정의
 
@@ -567,7 +567,7 @@ Worker 수가 늘어날수록 **소규모 윈도우(1~2개)가 줄고, 중대형
 
 ### 7.3 제출 결과물 검증
 
-`3_aggregate_output/firewall_agg_result.csv.gz` (Worker 1 기준)을 직접 열어 검증하였다.
+`3_집계결과물/firewall_agg_result.csv.gz` (Worker 1 기준)을 직접 열어 검증하였다.
 
 **기본 정합성**
 
