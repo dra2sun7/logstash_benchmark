@@ -47,10 +47,9 @@
 │   ├── worker{1,4,8}_jvm_chart.csv    # JVM Heap
 │   ├── worker{1,4,8}_disk.csv         # Logstash Disk I/O
 │   └── worker{1,4,8}_es.csv           # Elasticsearch Disk Write / CPU
-└── image/                             # 벤치마크 그래프 (21장)
 ```
 
-> `4_raw_metrics/`는 본 보고서의 모든 수치를 산출한 원본 데이터이다. Kibana Lens에서 10초 버킷, Counter rate(per second)로 추출하였으며, 이 CSV만으로 보고서의 전 수치를 재현할 수 있다.
+> `4_raw_metrics/`는 본 보고서의 모든 수치를 산출한 원본 데이터이다. Kibana Lens에서 10초 버킷, Counter rate(per second)로 추출하였으며, 이 CSV만으로 보고서의 전 수치를 재현할 수 있다. 벤치마크 그래프(21장)는 별도 폴더 없이 본 PDF 안에 직접 삽입되어 있다.
 
 ---
 
