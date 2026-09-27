@@ -16,11 +16,11 @@
 - Worker 수가 늘어날수록 **20초 윈도우의 이벤트 밀도 분포가 달라지는 현상**이 관측되었다. aggregate 필터 공식 문서에서 Worker를 1로 고정하도록 권고하는 이유를 실측으로 확인하였다.
 - Aggregate 병합을 통해 이벤트 건수를 약 **44.7~46.4% 축소**할 수 있었고, `sum(event_count)`는 전 케이스에서 동일하게 보존되었다.
 
-### 1.3 제출물 구성
+### 1.3 산출물 구성
 
 ```
 .
-├── 벤치마크_보고서.pdf                  # 본 보고서 (본 README.md를 PDF로 변환)
+├── 벤치마크_보고서.pdf                  # 본 보고서
 ├── 1_파이프라인/
 │   └── firewall_agg.conf              # Logstash 파이프라인 코드
 ├── 2_ELK_설정/
@@ -114,7 +114,7 @@ flowchart TD
 
 ### 3.1 측정 대상
 
-과제의 `CPU / Mem / JVM / IO`에서 `Mem`과 `JVM`이 함께 나열된 점을 보면, 하나의 JVM 프로세스를 OS 레벨과 런타임 레벨로 나눠 보라는 의미로 판단하였다. 따라서 주 측정 대상은 **Logstash 컨테이너/프로세스**이다.
+측정 항목은 `CPU / Memory / JVM / I/O` 네 가지로 정하였다. 이 중 Memory와 JVM은 하나의 JVM 프로세스를 각각 OS 레벨(컨테이너 메모리)과 런타임 레벨(Heap)에서 본 지표로, 둘을 함께 보아야 메모리 사용 양상을 정확히 파악할 수 있다. 따라서 주 측정 대상은 **Logstash 컨테이너/프로세스**로 설정하였다.
 
 보조적으로 Elasticsearch 컨테이너의 CPU와 Disk Write도 함께 수집하여, 3개 테스트에서 뒤이어 데이터를 받는 Elasticsearch 쪽 상태가 동일했는지 확인하였다.
 
@@ -264,7 +264,7 @@ output {
 
 **격리된 4건의 원인 — 입력 파일의 tar 아카이브 메타데이터 혼입**
 
-제공된 로그 파일은 확장자가 `.xz`로만 표시되어 있었지만, 실제 내용물은 tar로 먼저 묶은 뒤 xz로 압축한 이중 구조였다. 확장자만 보고 xz 압축만 해제했더니 tar 아카이브는 풀리지 않은 채 그대로 남았고, 그 tar 헤더가 로그 라인으로 읽힌 것이다.
+입력으로 사용한 로그 파일은 확장자가 `.xz`로만 표시되어 있었지만, 실제 내용물은 tar로 먼저 묶은 뒤 xz로 압축한 이중 구조였다. 확장자만 보고 xz 압축만 해제했더니 tar 아카이브는 풀리지 않은 채 그대로 남았고, 그 tar 헤더가 로그 라인으로 읽힌 것이다.
 
 ```
 generated_forti_logs.xz            ← 확장자에는 .xz만 표시됨
@@ -292,9 +292,9 @@ generated_forti_logs.xz            ← 확장자에는 .xz만 표시됨
 
 ```ruby
 aggregate {
-  task_id => "%{src_ip}_%{dst_ip}_%{dst_port}"     # 필수: 3-tuple key
-  timeout => 20                                      # 필수: 20초 타임아웃
-  timeout_timestamp_field => "@timestamp"            # 필수: event-time 기준
+  task_id => "%{src_ip}_%{dst_ip}_%{dst_port}"     # 병합 키: 3-tuple
+  timeout => 20                                      # 윈도우: 20초 타임아웃
+  timeout_timestamp_field => "@timestamp"            # 기준 시계: event-time
 
   timeout_tags => ['aggregated']
   push_map_as_event_on_timeout => true
@@ -514,7 +514,7 @@ CPU는 6.3절에서 병목이 아니라고 확인됐다. 남은 하드웨어 후
 
 ### 7.1 In / Out / Sum 검증
 
-과제 요구사항: *"agg 적용된 결과의 경우 out count는 축소되고, sum 집계 count 는 동일해야함"*
+검증 기준: Aggregate를 적용한 결과는 out count가 축소되어야 하며, `sum(event_count)`는 Aggregate 유입 건수와 동일하게 보존되어야 한다.
 
 | 단계 | 항목 | Worker 1 | Worker 4 | Worker 8 |
 |:---:|---|---:|---:|---:|
@@ -565,7 +565,7 @@ Worker 수가 늘어날수록 **소규모 윈도우(1~2개)가 줄고, 중대형
 
 **보안 운영 관점:** 20초 안에 로그가 몇 건 몰려있는지(event_count)는 포트 스캔이나 브루트포스 같은 공격을 구분하는 데 쓰일 수 있다. 정상적인 접속은 20초 안에 보통 한두 건이지만, 공격은 짧은 시간에 반복적으로 시도하기 때문에 이 값이 크게 나오는 경우가 많다. 그런데 Worker를 늘리면 이 값 자체가 실제 트래픽과 다르게 왜곡될 수 있으므로, 이 값의 정확도가 중요한 환경에서는 Worker 1로 운영하는 것이 안전하다.
 
-### 7.3 제출 결과물 검증
+### 7.3  결과물 검증
 
 `3_집계결과물/firewall_agg_result.csv.gz` (Worker 1 기준)을 직접 열어 검증하였다.
 
@@ -589,7 +589,7 @@ Worker 수가 늘어날수록 **소규모 윈도우(1~2개)가 줄고, 중대형
 | 1차 | 윈도우별 세션 길이 (`last_end_time − first_start_time`) | 음수 55%+ | 이 필드는 로그 자체의 연결 시작·종료 시각이지, aggregate가 윈도우를 연/닫은 시각이 아니었다 |
 | 2차 | 같은 key의 연속 윈도우 간 시간 간격 | 552,904건 중 2,719건(0.49%) 초과 | key가 한동안 조용했다가 다시 나타나 간격이 벌어지는 건 정상 동작이지, 타임아웃 오류가 아니었다 |
 
-**결론:** aggregate가 실제 판정에 쓰는 기준값(`@timestamp`)은 이 결과 파일에 남아있지 않다. `first_start_time`/`last_end_time`은 로그 자체의 속성일 뿐, 윈도우가 언제 열리고 닫혔는지와는 무관하다. 따라서 **현재 제출 결과물만으로는 20초 타임아웃의 정확한 준수 여부를 검증할 수 없다.** 검증하려면 aggregate `code` 블록에 `map['window_open_at'] ||= event.get('@timestamp')`처럼 판정 기준값을 별도 필드로 함께 기록하도록 파이프라인을 수정한 뒤 재실행해야 하며, 후속 개선 과제로 남긴다.
+**결론:** aggregate가 실제 판정에 쓰는 기준값(`@timestamp`)은 이 결과 파일에 남아있지 않다. `first_start_time`/`last_end_time`은 로그 자체의 속성일 뿐, 윈도우가 언제 열리고 닫혔는지와는 무관하다. 따라서 **현재 집계 결과물만으로는 20초 타임아웃의 정확한 준수 여부를 검증할 수 없다.** 검증하려면 aggregate `code` 블록에 `map['window_open_at'] ||= event.get('@timestamp')`처럼 판정 기준값을 별도 필드로 함께 기하도록 파이프라인을 수정한 뒤 재실행해야 하며, 후속 개선 과제로 남긴다.
 
 ---
 
